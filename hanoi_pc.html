@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>汉诺塔游戏</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .rules {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .controls {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .game-container {
+            display: flex;
+            justify-content: space-around;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-height: 350px;
+        }
+        .tower {
+            width: 200px;
+            height: 300px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .base {
+            width: 200px;
+            height: 20px;
+            background-color: #8B4513;
+            position: absolute;
+            bottom: 0;
+            z-index: 1;
+        }
+        .pole {
+            width: 10px;
+            height: 250px;
+            background-color: #8B4513;
+            position: absolute;
+            bottom: 20px;
+            z-index: 1;
+        }
+        .disk {
+            height: 30px;
+            border-radius: 15px;
+            margin: 2px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        select {
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="rules">
+        <h2>汉诺塔游戏规则</h2>
+        <p>汉诺塔（又称河内塔）是一个经典的数学游戏，规则如下：</p>
+        <ol>
+            <li>游戏开始时，所有圆盘都放在第一根柱子上，从下到上按大小顺序排列。</li>
+            <li>每次只能移动一个圆盘。</li>
+            <li>大圆盘不能放在小圆盘上面。</li>
+            <li>目标是将所有圆盘从第一根柱子移动到第三根柱子上。</li>
+        </ol>
+    </div>
+
+    <div class="controls">
+        <h3>游戏设置</h3>
+        <label for="diskCount">选择圆盘数量：</label>
+        <select id="diskCount">
+            <option value="3">3个圆盘</option>
+            <option value="4">4个圆盘</option>
+            <option value="5">5个圆盘</option>
+            <option value="6">6个圆盘</option>
+            <option value="7">7个圆盘</option>
+        </select>
+        <button onclick="startGame()">开始游戏</button>
+        <button onclick="resetGame()">重新开始</button>
+        <div id="debug-info" style="margin-top: 10px; color: #666;"></div>
+    </div>
+
+    <div class="game-container">
+        <div class="tower" id="tower1">
+            <div class="pole"></div>
+            <div class="base"></div>
+        </div>
+        <div class="tower" id="tower2">
+            <div class="pole"></div>
+            <div class="base"></div>
+        </div>
+        <div class="tower" id="tower3">
+            <div class="pole"></div>
+            <div class="base"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedDisk = null;
+        let selectedTower = null;
+        let diskCount = 3;
+        const colors = ['#FF5733', '#33FF57', '#3357FF', '#F3FF33', '#FF33F3', '#33FFF3', '#FF3333'];
+
+        function createDisk(size) {
+            const disk = document.createElement('div');
+            disk.className = 'disk';
+            disk.style.width = `${size * 20 + 40}px`;
+            disk.style.backgroundColor = colors[size - 1];
+            disk.setAttribute('data-size', size);
+            disk.textContent = size;
+            return disk;
+        }
+
+        function startGame() {
+            resetGame();
+            diskCount = parseInt(document.getElementById('diskCount').value);
+            const tower1 = document.getElementById('tower1');
+            
+            for (let i = diskCount; i > 0; i--) {
+                const disk = createDisk(i);
+                tower1.prepend(disk);
+            }
+            
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.textContent = `已生成${diskCount}个盘子。请点击盘子开始游戏。`;
+        }
+
+        function resetGame() {
+            const towers = document.querySelectorAll('.tower');
+            towers.forEach(tower => {
+                const pole = tower.querySelector('.pole');
+                const base = tower.querySelector('.base');
+                
+                tower.innerHTML = '';
+                
+                tower.appendChild(pole);
+                tower.appendChild(base);
+            });
+            selectedDisk = null;
+            selectedTower = null;
+        }
+
+        document.querySelectorAll('.tower').forEach(tower => {
+            tower.addEventListener('click', function() {
+                if (!selectedDisk) {
+                    const disks = this.querySelectorAll('.disk');
+                    if (disks.length > 0) {
+                        selectedDisk = disks[0];
+                        selectedTower = this;
+                        selectedDisk.style.opacity = '0.5';
+                    }
+                } else {
+                    const disks = this.querySelectorAll('.disk');
+                    const topDisk = disks[0];
+                    
+                    if (!topDisk || parseInt(selectedDisk.getAttribute('data-size')) < parseInt(topDisk.getAttribute('data-size'))) {
+                        selectedTower.removeChild(selectedDisk);
+                        this.insertBefore(selectedDisk, this.firstChild);
+                        selectedDisk.style.opacity = '1';
+                        selectedDisk = null;
+                        selectedTower = null;
+                        
+                        if (document.getElementById('tower3').querySelectorAll('.disk').length === diskCount) {
+                            setTimeout(() => {
+                                alert('恭喜你完成了挑战！');
+                            }, 100);
+                        }
+                    } else {
+                        selectedDisk.style.opacity = '1';
+                        selectedDisk = null;
+                        selectedTower = null;
+                    }
+                }
+            });
+        });
+
+        // 页面加载后自动初始化游戏
+        window.onload = function() {
+            console.log("页面已加载，初始化游戏...");
+            startGame();
+            console.log("游戏已初始化，盘子数量：" + diskCount);
+            
+            setTimeout(function() {
+                const tower1 = document.getElementById('tower1');
+                const disks = tower1.querySelectorAll('.disk');
+                console.log(`检测到${disks.length}个盘子`);
+                
+                if (disks.length === 0) {
+                    const debugInfo = document.getElementById('debug-info');
+                    debugInfo.innerHTML = '<span style="color: red;">警告：未能生成盘子。请尝试刷新页面或点击"开始游戏"按钮。</span>';
+                }
+            }, 500);
+        };
+    </script>
+</body>
+</html> 
