@@ -44,7 +44,8 @@ export const HanoiGame = () => {
       <p className="h-6 text-blue-600 mb-8">{message}</p>
       
       {/* 增加 gap-48 (12rem) 确保大盘子不打架，增加 h-64 拉高显示区域 */}
-      <div className="flex justify-center items-end gap-48 mt-5 h-64 border-b border-gray-200 pb-4 mx-auto max-w-4xl">
+      {/* 移动端适配：gap-4 md:gap-48, scale-50 md:scale-100 */}
+      <div className="flex justify-center items-end gap-4 md:gap-48 mt-5 h-48 md:h-64 border-b border-gray-200 pb-4 mx-auto max-w-4xl origin-bottom scale-[0.6] md:scale-100 transition-transform">
         {towers.map((disks, i) => (
           <div 
             key={i} 
@@ -54,7 +55,7 @@ export const HanoiGame = () => {
             }`}
           >
             {/* 柱子底座 */}
-            <div className="absolute -bottom-4 w-40 h-4 bg-gray-400 rounded shadow-sm"></div>
+            <div className="absolute -bottom-4 w-24 md:w-40 h-4 bg-gray-400 rounded shadow-sm"></div>
             
             {disks.map((disk, j) => (
               <div key={j} 
@@ -72,7 +73,7 @@ export const HanoiGame = () => {
       
       <button 
         onClick={resetGame} 
-        className="mt-12 px-6 py-2 border border-gray-300 rounded-full text-gray-600 hover:bg-gray-100 hover:shadow-md transition-all cursor-pointer"
+        className="mt-4 md:mt-12 px-6 py-2 border border-gray-300 rounded-full text-gray-600 hover:bg-gray-100 hover:shadow-md transition-all cursor-pointer"
       >
         重置游戏
       </button>

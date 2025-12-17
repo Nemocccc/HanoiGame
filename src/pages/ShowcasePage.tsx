@@ -45,10 +45,10 @@ export const ShowcasePage = () => {
   }
 
   return (
-    <div className="bg-white rounded-lg p-8 shadow-md">
+    <div className="bg-white rounded-lg p-4 md:p-8 shadow-md">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">✨ 风采展示</h2>
       
-      <div className="relative w-full h-[600px] bg-gray-900 rounded-lg overflow-hidden group flex items-center justify-center select-none">
+      <div className="relative w-full h-[300px] md:h-[600px] bg-gray-900 rounded-lg overflow-hidden group flex items-center justify-center select-none">
         {/* 图片显示区域 */}
         <img 
           src={imageList[currentIndex]} 
