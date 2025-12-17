@@ -1,52 +1,75 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SAT from 'sat';
 
-// 七巧板的7个基本形状（标准尺寸）
-const TANGRAM_PIECES = [
-  // 移除大三角形
-  // { id: 1, type: 'large-triangle', ... },
-  // { id: 2, type: 'large-triangle', ... },
+// 动态生成图形配置，根据是否移动端返回不同布局
+const getInitialPieces = (isMobile: boolean) => {
+  const pieces = [];
   
-  // 保留中三角形作为基础参考
-  {
+  // 1. 中三角形 (1个)
+  pieces.push({
     id: 3,
     type: 'medium-triangle',
     points: [0, 0, 70.7, 70.7, 0, 70.7],
-    color: '#FF9F43', // 亮橙色
-    initialX: 100,
-    initialY: 50,
-  },
-  
-  // 生成8个小三角形
-  ...Array.from({ length: 8 }).map((_, i) => ({
-    id: 100 + i,
-    type: 'small-triangle',
-    points: [0, 0, 50, 0, 0, 50],
-    color: '#48DBFB', // 亮青色
-    initialX: 50 + (i % 4) * 60,
-    initialY: 150 + Math.floor(i / 4) * 60,
-  })),
+    color: '#FF9F43',
+    // 移动端居中，桌面端靠左
+    x: isMobile ? 150 : 100,
+    y: 50,
+    rotation: 0
+  });
 
-  // 生成8个正方形
-  ...Array.from({ length: 8 }).map((_, i) => ({
-    id: 200 + i,
-    type: 'square',
-    points: [0, 0, 50, 0, 50, 50, 0, 50],
-    color: '#FF6B6B', // 亮红色
-    initialX: 350 + (i % 4) * 60,
-    initialY: 150 + Math.floor(i / 4) * 60,
-  })),
+  // 2. 小三角形 (8个)
+  for (let i = 0; i < 8; i++) {
+    pieces.push({
+      id: 100 + i,
+      type: 'small-triangle',
+      points: [0, 0, 50, 0, 0, 50],
+      color: '#48DBFB',
+      x: isMobile 
+        ? 25 + (i % 4) * 90  // 移动端：每行4个，间距加大，铺满宽度
+        : 50 + (i % 4) * 60,
+      y: isMobile 
+        ? 150 + Math.floor(i / 4) * 80 // 移动端：垂直向下排列
+        : 150 + Math.floor(i / 4) * 60,
+      rotation: 0
+    });
+  }
 
-  // 生成8个平行四边形
-  ...Array.from({ length: 8 }).map((_, i) => ({
-    id: 300 + i,
-    type: 'parallelogram',
-    points: [0, 0, 50, 0, 70.7, 35.35, 20.7, 35.35],
-    color: '#1DD1A1', // 亮绿色
-    initialX: 650 + (i % 2) * 80, // 平行四边形宽一点，排两列
-    initialY: 50 + Math.floor(i / 2) * 50,
-  })),
-];
+  // 3. 正方形 (8个)
+  for (let i = 0; i < 8; i++) {
+    pieces.push({
+      id: 200 + i,
+      type: 'square',
+      points: [0, 0, 50, 0, 50, 50, 0, 50],
+      color: '#FF6B6B',
+      x: isMobile 
+        ? 25 + (i % 4) * 90 
+        : 350 + (i % 4) * 60,
+      y: isMobile 
+        ? 320 + Math.floor(i / 4) * 80 // 移动端：接在三角形下方
+        : 150 + Math.floor(i / 4) * 60,
+      rotation: 0
+    });
+  }
+
+  // 4. 平行四边形 (8个)
+  for (let i = 0; i < 8; i++) {
+    pieces.push({
+      id: 300 + i,
+      type: 'parallelogram',
+      points: [0, 0, 50, 0, 70.7, 35.35, 20.7, 35.35],
+      color: '#1DD1A1',
+      x: isMobile 
+        ? 20 + (i % 3) * 110 // 移动端：每行3个，因为比较宽
+        : 650 + (i % 2) * 80,
+      y: isMobile 
+        ? 490 + Math.floor(i / 3) * 60 // 移动端：接在正方形下方
+        : 50 + Math.floor(i / 2) * 50,
+      rotation: 0
+    });
+  }
+
+  return pieces;
+};
 
 // 目标图形示例（已移除，设为 null）
 const TARGET_SHAPE: { name: string; outline: number[] } | null = null;
@@ -63,15 +86,26 @@ interface Piece {
 
 // 导出改为命名导出
 export const TangramGame: React.FC = () => {
-  const [pieces, setPieces] = useState<Piece[]>(
-    TANGRAM_PIECES.map(p => ({
-      ...p,
-      x: p.initialX,
-      y: p.initialY,
-      rotation: 0,
-    }))
-  );
+  // 检测移动端状态
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // 监听窗口大小变化
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // 初始化图形
+  const [pieces, setPieces] = useState<Piece[]>(() => getInitialPieces(window.innerWidth < 768));
   
+  // 当设备模式改变时（如旋转屏幕），重置布局以适应新视口
+  useEffect(() => {
+    setPieces(getInitialPieces(isMobile));
+  }, [isMobile]);
+
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -175,12 +209,7 @@ export const TangramGame: React.FC = () => {
     // 收集所有吸附点（目标图形顶点 + 其他七巧板顶点）
     const snapPoints: {x: number, y: number}[] = [];
     
-    // 1. 目标图形顶点 (如果有)
-    if (TARGET_SHAPE) {
-      for (let i = 0; i < TARGET_SHAPE.outline.length; i += 2) {
-        snapPoints.push({ x: TARGET_SHAPE.outline[i], y: TARGET_SHAPE.outline[i + 1] });
-      }
-    }
+    // 1. 目标图形顶点 (如果有) - 已移除 TARGET_SHAPE 逻辑以修复 TS 错误
 
     // 2. 其他七巧板顶点
     pieces.forEach(p => {
@@ -288,14 +317,7 @@ export const TangramGame: React.FC = () => {
 
   // 重置游戏
   const resetGame = () => {
-    setPieces(
-      TANGRAM_PIECES.map(p => ({
-        ...p,
-        x: p.initialX,
-        y: p.initialY,
-        rotation: 0,
-      }))
-    );
+    setPieces(getInitialPieces(isMobile));
     setSelectedId(null);
     setDraggingId(null);
     setMoves(0);
@@ -324,12 +346,17 @@ export const TangramGame: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedId]);
 
+  // 根据设备类型设置 viewBox
+  // 移动端：宽度400，高度800（竖长）
+  // 桌面端：宽度800，高度600（横宽）
+  const viewBox = isMobile ? "0 0 400 800" : "0 0 800 600";
+
   return (
-    <div className="w-full h-full p-4 flex flex-col">
-      <div className="flex justify-between items-center mb-5 pb-4 border-b-2 border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-800 m-0">七巧板拼图</h2>
-        <div className="flex gap-5 items-center">
-          <span className="text-base font-bold text-gray-600">移动次数: {moves}</span>
+    <div className="w-full h-full p-1 md:p-4 flex flex-col">
+      <div className="flex justify-between items-center mb-2 md:mb-5 pb-2 md:pb-4 border-b-2 border-gray-200">
+        <h2 className="text-lg md:text-2xl font-bold text-gray-800 m-0">七巧板拼图</h2>
+        <div className="flex gap-2 md:gap-5 items-center">
+          <span className="text-sm md:text-base font-bold text-gray-600">移动次数: {moves}</span>
           <label className="flex items-center gap-2 cursor-pointer">
             {TARGET_SHAPE && (
               <>
@@ -349,19 +376,19 @@ export const TangramGame: React.FC = () => {
       <div className="flex gap-3 mb-4">
         <button 
           onClick={() => rotatePiece(-45)}
-          className="px-5 py-2 text-sm bg-teal-500 text-white border-none rounded cursor-pointer transition-colors hover:bg-sky-600 active:scale-[0.98]"
+          className="px-3 py-1 md:px-5 md:py-2 text-sm bg-teal-500 text-white border-none rounded cursor-pointer transition-colors hover:bg-sky-600 active:scale-[0.98]"
         >
           ↺ 逆时针
         </button>
         <button 
           onClick={() => rotatePiece(45)}
-          className="px-5 py-2 text-sm bg-teal-500 text-white border-none rounded cursor-pointer transition-colors hover:bg-sky-600 active:scale-[0.98]"
+          className="px-3 py-1 md:px-5 md:py-2 text-sm bg-teal-500 text-white border-none rounded cursor-pointer transition-colors hover:bg-sky-600 active:scale-[0.98]"
         >
           ↻ 顺时针
         </button>
         <button 
           onClick={resetGame}
-          className="px-5 py-2 text-sm bg-teal-500 text-white border-none rounded cursor-pointer transition-colors hover:bg-sky-600 active:scale-[0.98]"
+          className="px-3 py-1 md:px-5 md:py-2 text-sm bg-teal-500 text-white border-none rounded cursor-pointer transition-colors hover:bg-sky-600 active:scale-[0.98]"
         >
           重置
         </button>
@@ -378,22 +405,19 @@ export const TangramGame: React.FC = () => {
       <svg
         ref={svgRef}
         className="w-full flex-1 border-2 border-gray-300 rounded-lg bg-gray-50 block select-none min-h-[500px]"
-        viewBox="0 0 800 600"
+        viewBox={viewBox}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        // 添加触摸事件支持，提升移动端体验
+        onTouchStart={(e) => {
+          // 简单的触摸兼容：将第一个触摸点转换为鼠标事件
+          if (e.touches.length > 0) {
+            // 占位，实际逻辑在各个 piece 上
+          }
+        }}
       >
-        {/* 目标轮廓 */}
-        {showTarget && TARGET_SHAPE && (
-          <polygon
-            points={pointsToPath(TARGET_SHAPE.outline)}
-            fill="none"
-            stroke="#333"
-            strokeWidth="2"
-            strokeDasharray="5,5"
-            opacity="0.3"
-          />
-        )}
+        {/* 目标轮廓 - 已移除以修复 TS 错误 */}
 
         {/* 七巧板块 */}
         {pieces.map((piece) => (
@@ -401,6 +425,28 @@ export const TangramGame: React.FC = () => {
             key={piece.id}
             transform={`translate(${piece.x}, ${piece.y}) rotate(${piece.rotation})`}
             onMouseDown={(e) => handleMouseDown(e, piece.id)}
+            onTouchStart={(e) => {
+              // 移动端触摸支持
+              if (e.cancelable) e.preventDefault(); // 防止滚动
+              const touch = e.touches[0];
+              // 构造一个类似 MouseEvent 的对象
+              const mouseEvent = {
+                preventDefault: () => {},
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+              } as React.MouseEvent;
+              handleMouseDown(mouseEvent, piece.id);
+            }}
+            onTouchMove={(e) => {
+              if (e.cancelable) e.preventDefault();
+              const touch = e.touches[0];
+              const mouseEvent = {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+              } as React.MouseEvent;
+              handleMouseMove(mouseEvent);
+            }}
+            onTouchEnd={handleMouseUp}
             className={`transition-[filter] duration-200 cursor-move ${
               selectedId === piece.id ? '[&>polygon]:stroke-red-500 [&>polygon]:stroke-[3] [&>polygon]:drop-shadow-[0_0_8px_rgba(255,107,107,0.6)]' : ''
             } ${
@@ -417,17 +463,6 @@ export const TangramGame: React.FC = () => {
           </g>
         ))}
       </svg>
-
-      <div className="mt-5 p-4 bg-gray-100 rounded-lg">
-        <h3 className="mt-0 text-gray-800">游戏说明：</h3>
-        <ul className="my-3 pl-5">
-          <li className="my-1 text-gray-600">拖动七巧板块到目标位置（会自动吸附顶点）</li>
-          <li className="my-1 text-gray-600">图形之间会进行碰撞检测，防止重叠</li>
-          <li className="my-1 text-gray-600">点击选中后使用左右方向键微调旋转</li>
-          <li className="my-1 text-gray-600">使用旋转按钮快速旋转 45°</li>
-          <li className="my-1 text-gray-600">尝试用所有7块拼出目标图形</li>
-        </ul>
-      </div>
     </div>
   );
 };

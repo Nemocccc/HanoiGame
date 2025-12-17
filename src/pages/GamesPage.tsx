@@ -6,9 +6,9 @@ export const GamesPage = () => {
   const [gameType, setGameType] = useState<'hanoi' | 'tangram'>('tangram');
 
   return (
-    <div className="bg-white rounded-lg p-8 shadow-md min-h-[400px]">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">🎮 算法小游戏</h2>
+    <div className="bg-white rounded-lg p-2 md:p-8 shadow-md min-h-[400px]">
+      <div className="flex justify-between items-center mb-4 md:mb-6">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800">🎮 算法小游戏</h2>
         <div className="flex gap-2 text-sm">
           <button 
             onClick={() => setGameType('tangram')}
